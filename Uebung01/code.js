@@ -1,7 +1,13 @@
 // Das Beispielexperiment erzeugt als Fragen nur die Zahlen 0-9.
 // Ein Experimentteilnehmer kann die Zahlen 1-3 drücken
 //
-// Abschließend enthält das Experiment
+// Die Experimentdefinition erfolgt über Aufruf der Funktion
+//  - document.experiment_definition(...)
+// Falls eine Zufallszahl benötigt wird, erhält man sie durch den Methodenaufruf
+//  - document.new_random_integer(...Obergrenze...);
+//
+// WICHTIG: Man sollte new_random_integer nur innerhalb  der Lambda-Funktion ausführen, also NICHT
+// an einer anderen Stelle, damit man ein reproduzierbares Experiment erhält!
 
 var myStuff = [];
 for (let i = 0; i < 10; i++) {
@@ -28,7 +34,7 @@ document.experiment_definition(
             // Im Feld code steht der Quellcode, der angezeigt wird,
             // in "expected_answer" das, was die Aufgabe als Lösung erachtet
             // In das Feld "given_answer" trägt das Experiment ein, welche Taste gedrückt wurde
-            t.code="Task " + myStuff[counter];
+            t.code="Task " + myStuff[counter] + document.new_random_integer(5);
             t.expected_answer = "1";
 
             // im Feld after_task_string steht eine Lambda-Funktion, die ausgeführt wird
