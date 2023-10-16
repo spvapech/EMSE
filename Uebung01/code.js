@@ -9,43 +9,43 @@
 // WICHTIG: Man sollte new_random_integer nur innerhalb  der Lambda-Funktion ausführen, also NICHT
 // an einer anderen Stelle, damit man ein reproduzierbares Experiment erhält!
 
-var myStuff = [];
-for (let i = 0; i < 10; i++) {
-    myStuff.push("" + i);
-}
-
-var counter = 0;
+let aString = "Hello World";
 
 // Das hier ist die eigentliche Experimentdefinition
 document.experiment_definition(
     {
-        experiment_name:"TestExperiment",
+        experiment_name:"Stefan First Trial",
         seed:"42",
-        introduction_pages:["This should explain the experiment.\n\nPress [Enter] to continue."],
-        pre_run_instruction:"Please, put your fingers now on the keys [1]-[3]. These are the only possible inputs in a task.\n\nWhen you press [Enter] the tasks directly start.",
-        finish_pages:["Almost done. When you press [Enter], the experiment's data will be downloaded."],
+        introduction_pages:["Interessiert mich nicht.\n\nPress [Enter] to continue."],
+        pre_run_instruction:"Gleich gehts los.\n\nWhen you press [Enter] the tasks directly start.",
+        finish_pages:["Thanks for nothing. When you press [Enter], the experiment's data will be downloaded."],
         layout:[
-            {variable:"Counter",treatments:["1","2","3","4","5"]}
+            {variable:"Indentation",treatments:["indented", "non-indented"]}
         ],
         repetitions:2,                    // Anzahl der Wiederholungen pro Treatmentcombination
-        accepted_responses:["1","2","3"], // Tasten, die vom Experiment als Eingabe akzeptiert werden
+        accepted_responses:["0", "1","2","3", "4", "5", "6", "7", "8", "9"], // Tasten, die vom Experiment als Eingabe akzeptiert werden
         task_configuration:(t)=>{
             // Das hier ist der Code, der jeder Task im Experiment den Code zuweist.
             // Im Feld code steht der Quellcode, der angezeigt wird,
             // in "expected_answer" das, was die Aufgabe als Lösung erachtet
             // In das Feld "given_answer" trägt das Experiment ein, welche Taste gedrückt wurde
-            t.code="Task " + myStuff[counter] + " + Zufallszahl " + document.new_random_integer(5);
+            //
+            // Ein Task-Objekt hat ein Feld treatment_combination, welches ein Array von Treatment-Objekten ist.
+            // Ein Treatment-Objekt hat zwei Felder:
+            //     variable - Ein Variable-Objekt, welches das Feld name hat (der Name der Variablen);
+            //     value - Ein String, in dem der Wert des Treatments steht.
+
+            if (t.treatment_combination[0].value=="indented") // fragt, ob die erste Variable (die einzige) den Wert "indented" hat
+                t.code = "    " + aString;
+            else
+                t.code = aString;
+
             t.expected_answer = "1";
 
             // im Feld after_task_string steht eine Lambda-Funktion, die ausgeführt wird
             // wenn eine Task beantwortet wurde. Das Ergebnis der Funktion muss ein String
             // sein.
             t.after_task_string = ()=>"Some nice text between the tasks";
-            counter++;
-
-            // Nicht vergessen: Es werden mehr als 10 Aufgaben generiert, da auch
-            // Trainingssets generiert werden.
-            if(counter==10) counter=0;
         }
     }
 );
