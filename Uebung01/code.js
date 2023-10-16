@@ -34,7 +34,7 @@ document.experiment_definition(
             // Im Feld code steht der Quellcode, der angezeigt wird,
             // in "expected_answer" das, was die Aufgabe als Lösung erachtet
             // In das Feld "given_answer" trägt das Experiment ein, welche Taste gedrückt wurde
-            t.code="Task " + myStuff[counter] + document.new_random_integer(5);
+            t.code="Task " + myStuff[counter] + " + Zuzallszahl " + document.new_random_integer(5);
             t.expected_answer = "1";
 
             // im Feld after_task_string steht eine Lambda-Funktion, die ausgeführt wird
