@@ -117,9 +117,10 @@ document.experiment_definition(
         pre_run_instruction:"Gleich gehts los.\n\nWhen you press [Enter] the tasks directly start.",
         finish_pages:["Thanks for nothing. When you press [Enter], the experiment's data will be downloaded."],
         layout:[
-            {variable:"Indentation",treatments:["indented", "non-indented"]}
+            {variable:"Indentation",treatments:["indented", "non-indented"]},
+            {variable:"Scrolling",treatments:["scroll", "non-scroll"]},
         ],
-        repetitions:2,                    // Anzahl der Wiederholungen pro Treatmentcombination
+        repetitions:4,                    // Anzahl der Wiederholungen pro Treatmentcombination
         accepted_responses:["0", "1","2","3", "4", "5", "6", "7", "8", "9"], // Tasten, die vom Experiment als Eingabe akzeptiert werden
         task_configuration:(t)=>{
             // Das hier ist der Code, der jeder Task im Experiment den Code zuweist.
