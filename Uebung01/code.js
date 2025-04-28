@@ -8,7 +8,7 @@ function random_name(options) {
 
 document.experiment_definition({
     experiment_name: "EMSE Java Codeverständnis (mit generischen Variablen)",
-    seed: "42",
+    seed: "" + Math.floor(Math.random() * 1000000),
     introduction_pages: [
         "Willkommen zum Java-Codeverständnis-Experiment.\n\nDu wirst gleich zufällige Java-Codebeispiele sehen.\nGib jeweils die Ausgabe der letzten Zeile (System.out.println) als Ziffer 0–9 ein.\n\nDrücke [Enter], um zu starten."
     ],
