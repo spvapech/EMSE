@@ -19,7 +19,7 @@ document.experiment_definition({
     layout: [
         { variable: "CodeFormat", treatments: ["mitKommentar", "ohneKommentar"] }
     ],
-    repetitions: 4,
+    repetitions: 10,
     accepted_responses: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"],
 
     task_configuration: (t) => {
