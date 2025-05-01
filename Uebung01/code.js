@@ -40,7 +40,14 @@ const experiment_configuration_function = (writer) => {
         ],
 
         layout: [
-            { variable: "CodeFormat", treatments: ["mitKommentar", "ohneKommentar"] }
+            { variable: "CodeFormat", treatments: ["mitKommentar", "ohneKommentar"] },
+            { variable: "CodeVariante", treatments: [
+                    "Direktausgabe",      // Direktausgabe des Werts
+                    "AdditionMod10",      // Addition zweier Zahlen mit mod 10
+                    "Schleifensumme",      // Summieren in einer Schleife
+                    "MultiplikationMod10",// Multiplikation mit 3 und mod 10
+                    "Arrayzugriff"         // Zugriff auf ein Array-Element
+                ]},
         ],
 
         training_configuration: {
@@ -49,7 +56,7 @@ const experiment_configuration_function = (writer) => {
             can_be_repeated: false
         },
 
-        repetitions: 10,
+        repetitions: 4,
 
         measurement: Nof1.Reaction_time(Nof1.keys(["0","1","2","3","4","5","6","7","8","9"])),
 
@@ -67,7 +74,7 @@ const experiment_configuration_function = (writer) => {
             };
 
             const codeVariants = [
-                // Variant 1: Direct output
+                // Direktausgabe
                 () => {
                     const val = random_int(10);
                     return {
@@ -80,7 +87,7 @@ const experiment_configuration_function = (writer) => {
                     };
                 },
 
-                // Variant 2: Addition with modulo
+                // Addition mit Modulo 10
                 () => {
                     const a = random_int(5);
                     const b = random_int(5);
@@ -97,7 +104,7 @@ const experiment_configuration_function = (writer) => {
                     };
                 },
 
-                // Variant 3: Loop sum
+                // Schleifensumme
                 () => {
                     const n = random_int(4) + 2;
                     let sum = 0;
@@ -116,7 +123,7 @@ const experiment_configuration_function = (writer) => {
                     };
                 },
 
-                // Variant 4: Multiplication + modulo
+                // Multiplikation mit Modulo 10
                 () => {
                     const v = random_int(5) + 1;
                     const res = (v * 3) % 10;
@@ -131,7 +138,7 @@ const experiment_configuration_function = (writer) => {
                     };
                 },
 
-                // Variant 5: Array access
+                // Arrayzugriff
                 () => {
                     const arr = [3, 7, 9, 1, 5];
                     const idx = random_int(arr.length);
