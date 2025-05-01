@@ -42,11 +42,13 @@ const experiment_configuration_function = (writer) => {
         layout: [
             { variable: "CodeFormat", treatments: ["mitKommentar", "ohneKommentar"] },
             { variable: "CodeVariante", treatments: [
-                    "Direktausgabe",      // Direktausgabe des Werts
-                    "AdditionMod10",      // Addition zweier Zahlen mit mod 10
-                    "Schleifensumme",      // Summieren in einer Schleife
-                    "MultiplikationMod10",// Multiplikation mit 3 und mod 10
-                    "Arrayzugriff"         // Zugriff auf ein Array-Element
+                    "Direktausgabe",         // Direktausgabe des Werts
+                    "AdditionMod10",         // Addition zweier Zahlen mit mod 10
+                    "Schleifensumme",         // Summieren in einer Schleife (mod 10)
+                    "MultiplikationMod10",   // Multiplikation mit 3 und mod 10
+                    "Arrayzugriff",          // Zugriff auf ein Array-Element
+                    "WhileSchleife",         // Summieren mit while-Schleife (mod 10)
+                    "ForEachSchleife"        // Summieren mit for-each-Schleife (mod 10)
                 ]},
         ],
 
@@ -56,7 +58,7 @@ const experiment_configuration_function = (writer) => {
             can_be_repeated: false
         },
 
-        repetitions: 4,
+        repetitions: 1,
 
         measurement: Nof1.Reaction_time(Nof1.keys(["0","1","2","3","4","5","6","7","8","9"])),
 
@@ -70,7 +72,8 @@ const experiment_configuration_function = (writer) => {
                 arr: random_name(["arr","numbers","values","data"]),
                 idx: random_name(["i","pos","index"]),
                 v: random_name(["v","input","value","factor"]),
-                resultVar: random_name(["res","result","output","final"])
+                resultVar: random_name(["res","result","output","final"]),
+                element: random_name(["elem","num","val","item"])
             };
 
             const codeVariants = [
@@ -104,22 +107,24 @@ const experiment_configuration_function = (writer) => {
                     };
                 },
 
-                // Schleifensumme
+                // Schleifensumme (for) mit mod 10
                 () => {
                     const n = random_int(4) + 2;
-                    let sum = 0;
-                    for (let i = 1; i <= n; i++) sum += i;
+                    let raw = 0;
+                    for (let i = 1; i <= n; i++) raw += i;
+                    const res = raw % 10;
                     return {
                         code: [
                             `int n = ${n};`,
-                            `int ${varNames.sum} = 0;`,
+                            `int raw = 0;`,
                             `for (int ${varNames.loopVar} = 1; ${varNames.loopVar} <= n; ${varNames.loopVar}++) {`,
-                            `    ${varNames.sum} += ${varNames.loopVar};`,
+                            `    raw += ${varNames.loopVar};`,
                             `}`,
+                            `int ${varNames.sum} = raw % 10;`,
                             `System.out.println(${varNames.sum});`
                         ],
-                        result: sum,
-                        meta: { n, sum, sumVar: varNames.sum, loop: varNames.loopVar }
+                        result: res,
+                        meta: { n, raw, res, sumVar: varNames.sum, loop: varNames.loopVar }
                     };
                 },
 
@@ -145,10 +150,60 @@ const experiment_configuration_function = (writer) => {
                     return {
                         code: [
                             `int[] ${varNames.arr} = {3, 7, 9, 1, 5};`,
-                            `System.out.println(${varNames.arr}[${idx}]);`
+                            `int index = ${idx};`,
+                            `System.out.println(${varNames.arr}[index]);`
                         ],
                         result: arr[idx],
                         meta: { arr: varNames.arr, idx }
+                    };
+                },
+
+                // While-Schleife mit mod 10
+                () => {
+                    const n = random_int(4) + 2;
+                    let raw = 0;
+                    let counter = 1;
+                    while (counter <= n) {
+                        raw += counter;
+                        counter++;
+                    }
+                    const res = raw % 10;
+                    return {
+                        code: [
+                            `int n = ${n};`,
+                            `int raw = 0;`,
+                            `int counter = 1;`,
+                            `while (counter <= n) {`,
+                            `    raw += counter;`,
+                            `    counter++;`,
+                            `}`,
+                            `int ${varNames.sum} = raw % 10;`,
+                            `System.out.println(${varNames.sum});`
+                        ],
+                        result: res,
+                        meta: { n, raw, res, sumVar: varNames.sum }
+                    };
+                },
+
+                // For-Each-Schleife mit mod 10
+                () => {
+                    const arr = [2, 4, 6, 8];
+                    let raw = 0;
+                    // JavaScript for-of statt Java-Syntax
+                    for (const element of arr) raw += element;
+                    const res = raw % 10;
+                    return {
+                        code: [
+                            `int[] ${varNames.arr} = {2, 4, 6, 8};`,
+                            `int raw = 0;`,
+                            `for (int ${varNames.element} : ${varNames.arr}) {`,
+                            `    raw += ${varNames.element};`,
+                            `}`,
+                            `int ${varNames.sum} = raw % 10;`,
+                            `System.out.println(${varNames.sum});`
+                        ],
+                        result: res,
+                        meta: { arr: varNames.arr, raw, res, length: arr.length, sumVar: varNames.sum }
                     };
                 }
             ];
@@ -163,28 +218,28 @@ const experiment_configuration_function = (writer) => {
                 if (!addComment) return line;
 
                 let commentText = "";
-                if (line.includes("System.out.println") && meta?.idx !== undefined) {
+                if (line.includes("while")) {
+                    commentText = `While-Schleife, wiederholt sich ${meta.n} Mal, result mod 10`;
+                } else if (line.includes("for (int") && !line.includes("<= n")) {
+                    commentText = `For-Each-Schleife, wiederholt sich ${meta.length} Mal, result mod 10`;
+                } else if (line.includes("System.out.println") && meta?.idx !== undefined) {
                     commentText = `Gibt die ${meta.idx + 1}. Array-Stelle aus`;
                 } else if (line.includes("System.out.println")) {
-                    commentText = "Gibt Ausgabe aus";
+                    commentText = "Gibt Ausgabe aus (0–9)";
                 } else if (line.includes(`int ${meta?.var} =`)) {
                     commentText = `Variable ${meta.var} = ${meta.val}`;
                 } else if (line.includes(`int ${meta?.varA} =`)) {
                     commentText = `Erste Zahl (${meta.a})`;
                 } else if (line.includes(`int ${meta?.varB} =`)) {
                     commentText = `Zweite Zahl (${meta.b})`;
-                } else if (line.includes("% 10")) {
-                    commentText = "Ergebnis mod 10";
+                } else if (line.includes("raw % 10")) {
+                    commentText = "Ergebnis mod 10 (0–9)";
                 } else if (line.includes("int n =")) {
                     commentText = `n = ${meta.n}`;
-                } else if (line.includes("for")) {
-                    commentText = "Schleife von 1 bis n";
-                } else if (line.includes("+=") && meta?.sumVar) {
-                    commentText = `Summe += i`;
+                } else if (line.includes("for (int") && line.includes("<= n")) {
+                    commentText = `Schleife von 1 bis ${meta.n} (${meta.n} Durchläufe)`;
                 } else if (line.includes("int[]")) {
                     commentText = "Array initialisieren";
-                } else if (line.includes("[") && line.includes("]") && meta?.idx !== undefined) {
-                    commentText = `Array-Stelle ${meta.idx + 1}`;
                 }
 
                 const codePart = line.split("//")[0].trimEnd();
@@ -205,4 +260,4 @@ const experiment_configuration_function = (writer) => {
     };
 };
 
-Nof1.BROWSER_EXPERIMENT(experiment_configuration_function)
+Nof1.BROWSER_EXPERIMENT(experiment_configuration_function);
