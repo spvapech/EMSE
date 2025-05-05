@@ -58,7 +58,7 @@ const experiment_configuration_function = (writer) => {
             can_be_repeated: false
         },
 
-        repetitions: 1,
+        repetitions: 3,
 
         measurement: Nof1.Reaction_time(Nof1.keys(["0","1","2","3","4","5","6","7","8","9"])),
 
@@ -227,7 +227,7 @@ const experiment_configuration_function = (writer) => {
                 } else if (line.includes("System.out.println")) {
                     commentText = "Gibt Ausgabe aus (0–9)";
                 } else if (line.includes(`int ${meta?.var} =`)) {
-                    commentText = `Variable ${meta.var} = ${meta.val}`;
+                    commentText = `Variable ${meta.var} = ${meta.v}`;
                 } else if (line.includes(`int ${meta?.varA} =`)) {
                     commentText = `Erste Zahl (${meta.a})`;
                 } else if (line.includes(`int ${meta?.varB} =`)) {
