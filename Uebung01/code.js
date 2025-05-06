@@ -19,7 +19,10 @@ const experiment_configuration_function = (writer) => {
                 "Willkommen zum Java-Codeverständnis-Experiment.\n\nBitte nur starten, wenn du konzentriert und motiviert bist.\n\nWechsle bitte in den Vollbildmodus (wahrscheinlich mit [F11])."
             ),
             writer.convert_string_to_html_string(
-                "Du wirst Java-Codebeispiele sehen und die Ausgabe der letzten Zeile bestimmen.\n\nDie Aufgaben sind nicht zu schwer."
+                "In diesem Test wirst du kleine Java-Codebeispiele sehen. Deine Aufgabe ist es, die Ausgabe des Codes korrekt zu bestimmen.\n\nAntworte mit einer Ziffer von 0 bis 9, je nachdem, was in der letzten Zeile mit `System.out.println(...)` ausgegeben wird."
+            ),
+            writer.convert_string_to_html_string(
+                "Zuerst gibt es ein kurzes Training, danach beginnt die eigentliche Testphase.\n\nDu bekommst Rückmeldung, ob deine Eingabe gültig war, aber keine Korrekturhinweise.\n\nBitte beantworte jede Aufgabe so schnell und genau wie möglich."
             )
         ]),
 
@@ -247,15 +250,24 @@ const experiment_configuration_function = (writer) => {
                 return padded + `<span style="color: blue; font-style: italic">// ${commentText}</span>`;
             });
 
+            const currentVariantName = t.treatment_combination[1].value;
+
             t.do_print_task = () => {
                 writer.clear_stage();
+                writer.print_html_on_stage(`<p><strong>Variante:</strong> ${currentVariantName}</p>`);
                 writer.print_html_on_stage(`<pre>${commentedCode.join("\n")}</pre>`);
             };
 
             t.expected_answer = "" + result;
             t.accepts_answer_function = (given_answer) => ["0","1","2","3","4","5","6","7","8","9"].includes(given_answer);
-            t.do_print_error_message = (given_answer) => { writer.clear_error(); writer.print_html_on_error(`<h1>Ungültige Antwort: ${given_answer}</h1>`); };
-            t.do_print_after_task_information = () => { writer.clear_error(); writer.print_string_on_stage(writer.convert_string_to_html_string("\n\nFalls du dich unkonzentriert fühlst, mach eine kurze Pause.\n\nDrücke [Enter], um fortzufahren.")); };
+            t.do_print_error_message = (given_answer) => {
+                writer.clear_error();
+                writer.print_html_on_error(`<h1>Ungültige Antwort: ${given_answer}</h1>`);
+            };
+            t.do_print_after_task_information = () => {
+                writer.clear_error();
+                writer.print_string_on_stage(writer.convert_string_to_html_string("\n\nFalls du dich unkonzentriert fühlst, mach eine kurze Pause.\n\nDrücke [Enter], um fortzufahren."));
+            };
         }
     };
 };
