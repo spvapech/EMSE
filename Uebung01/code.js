@@ -10,6 +10,45 @@ const experiment_configuration_function = (writer) => {
         return options[random_int(options.length)];
     }
 
+    function format_code_lines(codeLines, addComment) {
+        const COMMENT_COLUMN = 50;
+
+        return codeLines.map((line) => {
+            if (!addComment) return line.split("//")[0].trimEnd();
+            if (!line.includes("//")) return line;
+
+            const [codePart, comment] = line.split("//");
+            const code = codePart.trimEnd();
+            const indent = codePart.match(/^\s*/)[0];
+
+            const paddedCode = indent + code;
+            const paddingLength = Math.max(COMMENT_COLUMN - paddedCode.length, 2);
+            const padding = " ".repeat(paddingLength);
+
+            const trimmedComment = comment.trim();
+            const isDistraction = /nicht relevant/i.test(trimmedComment);
+            const style = isDistraction
+                ? "color: red; font-weight: bold; font-style: italic"
+                : "color: blue; font-style: italic";
+
+            return `${paddedCode}${padding}<span style="${style}">// ${trimmedComment}</span>`;
+        });
+    }
+
+    function generateVarNames() {
+        return {
+            v1: random_name(["a", "x", "n", "k", "i"]),
+            v2: random_name(["b", "y", "j", "m", "p"]),
+            v3: random_name(["c", "z", "q", "r", "u"]),
+            temp: random_name(["temp", "t", "buffer", "store"]),
+            result: random_name(["res", "out", "final", "answer"]),
+            dummy: random_name(["unused", "noise", "junk", "irrelevant"]),
+            flag: random_name(["flag", "check", "found", "done"]),
+            array: random_name(["arr", "nums", "list", "data"]),
+            func: random_name(["f", "g", "h", "calc"]),
+        };
+    }
+
     return {
         experiment_name: "Java Codeverständnis mit Nof1",
         seed: SEED,
@@ -23,7 +62,7 @@ const experiment_configuration_function = (writer) => {
             ),
             writer.convert_string_to_html_string(
                 "Zuerst gibt es ein kurzes Training, danach beginnt die eigentliche Testphase.\n\nDu bekommst Rückmeldung, ob deine Eingabe gültig war, aber keine Korrekturhinweise.\n\nBitte beantworte jede Aufgabe so schnell und genau wie möglich."
-            )
+            ),
         ]),
 
         pre_run_training_instructions: writer.string_page_command(
@@ -39,236 +78,182 @@ const experiment_configuration_function = (writer) => {
                 writer.convert_string_to_html_string(
                     "Fast fertig. Deine Daten werden jetzt heruntergeladen. Bitte sende die Datei an den Versuchsleiter.\n\nDanach kannst du das Fenster schließen.\n\nVielen Dank für deine Teilnahme!"
                 )
-            )
+            ),
         ],
 
         layout: [
             { variable: "CodeFormat", treatments: ["mitKommentar", "ohneKommentar"] },
-            { variable: "CodeVariante", treatments: [
-                    "Direktausgabe",         // Direktausgabe des Werts
-                    "AdditionMod10",         // Addition zweier Zahlen mit mod 10
-                    "Schleifensumme",         // Summieren in einer Schleife (mod 10)
-                    "MultiplikationMod10",   // Multiplikation mit 3 und mod 10
-                    "Arrayzugriff",          // Zugriff auf ein Array-Element
-                    "WhileSchleife",         // Summieren mit while-Schleife (mod 10)
-                    "ForEachSchleife"        // Summieren mit for-each-Schleife (mod 10)
-                ]},
+            { variable: "CodeVariante", treatments: ["Rekursion", "NestedLoops", "BoolLogik"] },
         ],
 
         training_configuration: {
             fixed_treatments: [["CodeFormat", "mitKommentar"]],
             can_be_cancelled: false,
-            can_be_repeated: false
+            can_be_repeated: false,
         },
 
         repetitions: 3,
 
-        measurement: Nof1.Reaction_time(Nof1.keys(["0","1","2","3","4","5","6","7","8","9"])),
+        measurement: Nof1.Reaction_time(Nof1.keys(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"])),
 
         task_configuration: (t) => {
-            const varNames = {
-                x: random_name(["x","val","num","digit"]),
-                a: random_name(["a","num1","left","start"]),
-                b: random_name(["b","num2","right","end"]),
-                sum: random_name(["sum","total","result","output"]),
-                loopVar: random_name(["i","j","k"]),
-                arr: random_name(["arr","numbers","values","data"]),
-                idx: random_name(["i","pos","index"]),
-                v: random_name(["v","input","value","factor"]),
-                resultVar: random_name(["res","result","output","final"]),
-                element: random_name(["elem","num","val","item"])
-            };
+            const v = generateVarNames();
+            const randNum = () => random_int(5) + 5;
 
-            const codeVariants = [
-                // Direktausgabe
-                () => {
-                    const val = random_int(10);
-                    return {
-                        code: [
-                            `int ${varNames.x} = ${val};`,
-                            `System.out.println(${varNames.x});`
-                        ],
-                        result: val,
-                        meta: { val, var: varNames.x }
-                    };
-                },
-
-                // Addition mit Modulo 10
-                () => {
-                    const a = random_int(5);
-                    const b = random_int(5);
-                    const res = (a + b) % 10;
-                    return {
-                        code: [
-                            `int ${varNames.a} = ${a};`,
-                            `int ${varNames.b} = ${b};`,
-                            `int ${varNames.sum} = (${varNames.a} + ${varNames.b}) % 10;`,
-                            `System.out.println(${varNames.sum});`
-                        ],
-                        result: res,
-                        meta: { a, b, varA: varNames.a, varB: varNames.b, sumVar: varNames.sum }
-                    };
-                },
-
-                // Schleifensumme (for) mit mod 10
-                () => {
-                    const n = random_int(4) + 2;
-                    let raw = 0;
-                    for (let i = 1; i <= n; i++) raw += i;
-                    const res = raw % 10;
-                    return {
-                        code: [
-                            `int n = ${n};`,
-                            `int raw = 0;`,
-                            `for (int ${varNames.loopVar} = 1; ${varNames.loopVar} <= n; ${varNames.loopVar}++) {`,
-                            `    raw += ${varNames.loopVar};`,
-                            `}`,
-                            `int ${varNames.sum} = raw % 10;`,
-                            `System.out.println(${varNames.sum});`
-                        ],
-                        result: res,
-                        meta: { n, raw, res, sumVar: varNames.sum, loop: varNames.loopVar }
-                    };
-                },
-
-                // Multiplikation mit Modulo 10
-                () => {
-                    const v = random_int(5) + 1;
-                    const res = (v * 3) % 10;
-                    return {
-                        code: [
-                            `int ${varNames.v} = ${v};`,
-                            `int ${varNames.resultVar} = (${varNames.v} * 3) % 10;`,
-                            `System.out.println(${varNames.resultVar});`
-                        ],
-                        result: res,
-                        meta: { v, var: varNames.v, outVar: varNames.resultVar }
-                    };
-                },
-
-                // Arrayzugriff
-                () => {
-                    const arr = [3, 7, 9, 1, 5];
-                    const idx = random_int(arr.length);
-                    return {
-                        code: [
-                            `int[] ${varNames.arr} = {3, 7, 9, 1, 5};`,
-                            `int index = ${idx};`,
-                            `System.out.println(${varNames.arr}[index]);`
-                        ],
-                        result: arr[idx],
-                        meta: { arr: varNames.arr, idx }
-                    };
-                },
-
-                // While-Schleife mit mod 10
-                () => {
-                    const n = random_int(4) + 2;
-                    let raw = 0;
-                    let counter = 1;
-                    while (counter <= n) {
-                        raw += counter;
-                        counter++;
-                    }
-                    const res = raw % 10;
-                    return {
-                        code: [
-                            `int n = ${n};`,
-                            `int raw = 0;`,
-                            `int counter = 1;`,
-                            `while (counter <= n) {`,
-                            `    raw += counter;`,
-                            `    counter++;`,
-                            `}`,
-                            `int ${varNames.sum} = raw % 10;`,
-                            `System.out.println(${varNames.sum});`
-                        ],
-                        result: res,
-                        meta: { n, raw, res, sumVar: varNames.sum }
-                    };
-                },
-
-                // For-Each-Schleife mit mod 10
-                () => {
-                    const arr = [2, 4, 6, 8];
-                    let raw = 0;
-                    // JavaScript for-of statt Java-Syntax
-                    for (const element of arr) raw += element;
-                    const res = raw % 10;
-                    return {
-                        code: [
-                            `int[] ${varNames.arr} = {2, 4, 6, 8};`,
-                            `int raw = 0;`,
-                            `for (int ${varNames.element} : ${varNames.arr}) {`,
-                            `    raw += ${varNames.element};`,
-                            `}`,
-                            `int ${varNames.sum} = raw % 10;`,
-                            `System.out.println(${varNames.sum});`
-                        ],
-                        result: res,
-                        meta: { arr: varNames.arr, raw, res, length: arr.length, sumVar: varNames.sum }
-                    };
-                }
+            const generateNoiseBlock = () => [
+                `// nicht relevant`,
+                `int ${v.dummy} = 0;                                      // nicht relevant`,
+                `for (int ${v.temp} = 0; ${v.temp} < 3; ${v.temp}++) {   // nicht relevant`,
+                `    if (${v.temp} % 2 == 0) ${v.dummy} += ${v.temp};    // nicht relevant`,
+                `    else ${v.dummy} -= ${v.temp};                       // nicht relevant`,
+                `}`,
             ];
 
-            const variant = codeVariants[random_int(codeVariants.length)]();
-            const lines = variant.code;
-            const result = variant.result;
-            const meta = variant.meta;
+            const variantName = t.treatment_combination[1].value;
             const addComment = t.treatment_combination[0].value === "mitKommentar";
 
-            const commentedCode = lines.map((line) => {
-                if (!addComment) return line;
+            const codeVariants = {
+                Rekursion: () => {
+                    const val = randNum();
+                    const fib = [0, 1];
+                    for (let i = 2; i <= val; i++) fib.push(fib[i - 1] + fib[i - 2]);
+                    const res = fib[val] % 10;
 
-                let commentText = "";
-                if (line.includes("while")) {
-                    commentText = `While-Schleife, wiederholt sich ${meta.n} Mal, result mod 10`;
-                } else if (line.includes("for (int") && !line.includes("<= n")) {
-                    commentText = `For-Each-Schleife, wiederholt sich ${meta.length} Mal, result mod 10`;
-                } else if (line.includes("System.out.println") && meta?.idx !== undefined) {
-                    commentText = `Gibt die ${meta.idx + 1}. Array-Stelle aus`;
-                } else if (line.includes("System.out.println")) {
-                    commentText = "Gibt Ausgabe aus (0–9)";
-                } else if (line.includes(`int ${meta?.var} =`)) {
-                    commentText = `Variable ${meta.var} = ${meta.v}`;
-                } else if (line.includes(`int ${meta?.varA} =`)) {
-                    commentText = `Erste Zahl (${meta.a})`;
-                } else if (line.includes(`int ${meta?.varB} =`)) {
-                    commentText = `Zweite Zahl (${meta.b})`;
-                } else if (line.includes("raw % 10")) {
-                    commentText = "Ergebnis mod 10 (0–9)";
-                } else if (line.includes("int n =")) {
-                    commentText = `n = ${meta.n}`;
-                } else if (line.includes("for (int") && line.includes("<= n")) {
-                    commentText = `Schleife von 1 bis ${meta.n} (${meta.n} Durchläufe)`;
-                } else if (line.includes("int[]")) {
-                    commentText = "Array initialisieren";
-                }
+                    return {
+                        code: [
+                            `int ${v.func}(int ${v.v1}, int[] ${v.array}) {`,
+                            `    int noise = 0;                                      // nicht relevant`,
+                            `    for (int i = 0; i < 2; i++) noise += i;            // nicht relevant`,
+                            `    if (${v.v1} < ${v.array}.length && ${v.array}[${v.v1}] != -1) return ${v.array}[${v.v1}];`,
+                            `    if (${v.v1} <= 1) return ${v.v1};`,
+                            `    ${v.array}[${v.v1}] = ${v.func}(${v.v1} - 1, ${v.array}) + ${v.func}(${v.v1} - 2, ${v.array});`,
+                            `    if (${v.v1} % 3 == 0) int distract = ${v.v1} * 2;   // nicht relevant`,
+                            `    return ${v.array}[${v.v1}];`,
+                            `}`,
+                            `int[] ${v.array} = new int[20];`,
+                            `for (int i = 0; i < ${v.array}.length; i++) ${v.array}[i] = -1;`,
+                            `int ${v.v2} = ${val};`,
+                            `int temp = 123;                                       // nicht relevant`,
+                            `int ${v.result} = ${v.func}(${v.v2}, ${v.array}) % 10;`,
+                            ...generateNoiseBlock(),
+                            `System.out.println(${v.result});`,
+                        ],
+                        result: res,
+                    };
+                },
 
-                const codePart = line.split("//")[0].trimEnd();
-                const padded = codePart.padEnd(40, ' ');
-                return padded + `<span style="color: blue; font-style: italic">// ${commentText}</span>`;
-            });
+                NestedLoops: () => {
+                    let total = 0;
+                    for (let i = 1; i <= 4; i++) {
+                        for (let j = 1; j <= 4; j++) {
+                            let product = i * j;
+                            if (product % 2 === 0 && i !== j && !(i === 2 && j === 2)) {
+                                total += i + j;
+                            }
+                        }
+                    }
 
-            const currentVariantName = t.treatment_combination[1].value;
+                    return {
+                        code: [
+                            `int ${v.result} = 0;`,
+                            `boolean ${v.flag} = false;`,
+                            `int noiseCounter = 0;                                // nicht relevant`,
+                            `for (int ${v.v1} = 1; ${v.v1} <= 4; ${v.v1}++) {`,
+                            `    for (int ${v.v2} = 1; ${v.v2} <= 4; ${v.v2}++) {`,
+                            `        int ${v.temp} = ${v.v1} * ${v.v2};`,
+                            `        if ((${v.v1} + ${v.v2}) % 7 == 0) noiseCounter++; // nicht relevant`,
+                            `        if (${v.temp} % 2 == 0 && ${v.v1} != ${v.v2}) {`,
+                            `            if (!(${v.v1} == 2 && ${v.v2} == 2)) {`,
+                            `                int sum = ${v.v1} + ${v.v2};`,
+                            `                for (int k = 0; k < 1; k++) sum += 0; // nicht relevant`,
+                            `                ${v.result} += sum;`,
+                            `            } else {`,
+                            `                ${v.flag} = true;`,
+                            `            }`,
+                            `        }`,
+                            `    }`,
+                            `    if (${v.flag}) break;`,
+                            `}`,
+                            `for (int z = 0; z < 2; z++) int dummy = z * z;       // nicht relevant`,
+                            `System.out.println(${v.result} % 10);`,
+                        ],
+                        result: total % 10,
+                    };
+                },
+
+                BoolLogik: () => {
+                    const inputs = [true, false, true, true, false];
+                    let result = 0;
+
+                    for (let i = 0; i < inputs.length; i++) {
+                        const a = inputs[i];
+                        const b = inputs[(i + 1) % inputs.length];
+
+                        if ((a && !b) || (!a && b)) {
+                            result += i;
+                        }
+
+                        if (a && b) {
+                            result += 2;
+                        }
+                    }
+
+                    return {
+                        code: [
+                            `boolean[] ${v.array} = {true, false, true, true, false};`,
+                            `int ${v.result} = 0;`,
+                            `int noiseCounter = 0;                                // nicht relevant`,
+                            `for (int ${v.v1} = 0; ${v.v1} < ${v.array}.length; ${v.v1}++) {`,
+                            `    boolean a = ${v.array}[${v.v1}];`,
+                            `    boolean b = ${v.array}[(${v.v1} + 1) % ${v.array}.length];`,
+                            `    if (a == b) noiseCounter++;                      // nicht relevant`,
+                            `    if ((a && !b) || (!a && b)) {`,
+                            `        ${v.result} += ${v.v1};`,
+                            `    }`,
+                            `    if (a && b) {`,
+                            `        ${v.result} += 2;`,
+                            `    }`,
+                            `    boolean distraction = (${v.v1} % 2 == 0);        // nicht relevant`,
+                            `}`,
+                            `boolean dummyFlag = noiseCounter > 3;               // nicht relevant`,
+                            `if (dummyFlag) ${v.result} += 0;                    // nicht relevant`,
+                            `System.out.println(${v.result} % 10);`,
+                        ],
+                        result: result % 10,
+                    };
+                },
+            };
+
+            if (!(variantName in codeVariants)) {
+                throw new Error(`Unbekannte Code-Variante: ${variantName}`);
+            }
+
+            const { code, result } = codeVariants[variantName]();
+            const formattedCode = format_code_lines(code, addComment);
 
             t.do_print_task = () => {
                 writer.clear_stage();
-                writer.print_html_on_stage(`<p><strong>Variante:</strong> ${currentVariantName}</p>`);
-                writer.print_html_on_stage(`<pre>${commentedCode.join("\n")}</pre>`);
+                writer.print_html_on_stage(`<p><strong>Variante:</strong> ${variantName}</p>`);
+                writer.print_html_on_stage(`<pre>${formattedCode.join("\n")}</pre>`);
             };
 
-            t.expected_answer = "" + result;
-            t.accepts_answer_function = (given_answer) => ["0","1","2","3","4","5","6","7","8","9"].includes(given_answer);
-            t.do_print_error_message = (given_answer) => {
+            t.expected_answer = String(result);
+
+            t.accepts_answer_function = (a) =>
+                ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].includes(a);
+
+            t.do_print_error_message = (a) => {
                 writer.clear_error();
-                writer.print_html_on_error(`<h1>Ungültige Antwort: ${given_answer}</h1>`);
+                writer.print_html_on_error(`<h1>Ungültige Antwort: ${a}</h1>`);
             };
+
             t.do_print_after_task_information = () => {
                 writer.clear_error();
-                writer.print_string_on_stage(writer.convert_string_to_html_string("\n\nFalls du dich unkonzentriert fühlst, mach eine kurze Pause.\n\nDrücke [Enter], um fortzufahren."));
+                writer.print_string_on_stage(
+                    writer.convert_string_to_html_string("\n\nFalls du dich unkonzentriert fühlst, mach eine kurze Pause.\n\nDrücke [Enter], um fortzufahren.")
+                );
             };
-        }
+        },
     };
 };
 
