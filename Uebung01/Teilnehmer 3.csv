@@ -1,0 +1,11 @@
+CodeFormat;expected_answer;given_answer;is_correct;time_in_milliseconds;
+mitKommentar;0;0;true;5126;
+mitKommentar;7;7;true;3486;
+mitKommentar;1;1;true;4510;
+ohneKommentar;10;4;false;4653;
+ohneKommentar;7;1;false;4742;
+ohneKommentar;8;8;true;2019;
+mitKommentar;3;3;true;2040;
+mitKommentar;7;7;true;2166;
+ohneKommentar;10;1;false;13210;
+ohneKommentar;3;3;true;8498;
