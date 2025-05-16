@@ -109,26 +109,53 @@ const experiment_configuration_function = (writer) => {
 
         task_configuration: (t) => {
             const v = generateVarNames();
-            const randNum = () => random_int(5) + 5;
+            const randNum = () => random_int(3) + 3;
 
-            const generateNoiseBlock = () => [
-                `// nicht relevant`,
-                `int ${v.dummy} = 0;                                      // nicht relevant`,
-                `for (int ${v.temp} = 0; ${v.temp} < 3; ${v.temp}++) {   // nicht relevant`,
-                `    if (${v.temp} % 2 == 0) {`,
-                `        ${v.dummy} += ${v.temp};                        // nicht relevant`,
-                `    } else {`,
-                `        ${v.dummy} -= ${v.temp};                        // nicht relevant`,
-                `    }`,
-                `}`,
+            const noise_blocks = [
+                () => [
+                    `int dummy = 42;                                      // nicht relevant`,
+                    `dummy += 1;                                          // nicht relevant`,
+                ],
+                () => [
+                    `String msg = "debug";                                // nicht relevant`,
+                    `if (msg.length() > 0) {                              // nicht relevant`,
+                    `    msg += "!";                                      // nicht relevant`,
+                    `}`,
+                ],
+                () => [
+                    `boolean ${v.flag} = true;                             // nicht relevant`,
+                    `if (${v.flag} && false) {                             // nicht relevant`,
+                    `    System.out.println("Should not print");          // nicht relevant`,
+                    `}`,
+                ],
+                () => [
+                    `for (int zz = 0; zz < 1; zz++) {                      // nicht relevant`,
+                    `    int x = zz * 0;                                   // nicht relevant`,
+                    `}`,
+                ],
+                () => [
+                    `char c = 'A';                                         // nicht relevant`,
+                    `c += 1;                                               // nicht relevant`,
+                ],
             ];
+
+            const generateNoiseBlock = () => {
+                const selected = noise_blocks.slice();
+                const blockCount = 2 + random_int(2);
+                const result = [];
+                for (let i = 0; i < blockCount; i++) {
+                    const index = random_int(selected.length);
+                    result.push(...selected.splice(index, 1)[0]());
+                }
+                return result;
+            };
 
             const variantName = t.treatment_combination[1].value;
             const addComment = t.treatment_combination[0].value === "mitKommentar";
 
             const codeVariants = {
                 Rekursion: () => {
-                    const val = randNum();
+                    const val = 4;
                     const fib = [0, 1];
                     for (let i = 2; i <= val; i++) {
                         fib.push(fib[i - 1] + fib[i - 2]);
@@ -138,29 +165,18 @@ const experiment_configuration_function = (writer) => {
                     return {
                         code: [
                             `int ${v.func}(int ${v.v1}, int[] ${v.array}) {`,
-                            `    int noise = 0;                                      // nicht relevant`,
-                            `    for (int i = 0; i < 2; i++) {                      // Schleife läuft 2-mal (i=0,1)`,
-                            `        noise += i;                                    // nicht relevant`,
-                            `    }`,
                             `    if (${v.v1} < ${v.array}.length && ${v.array}[${v.v1}] != -1) {`,
-                            `        return ${v.array}[${v.v1}];                    // Prüft, ob Ergebnis schon berechnet wurde`,
+                            `        return ${v.array}[${v.v1}];                    // bereits berechnet`,
                             `    }`,
-                            `    if (${v.v1} <= 1) {`,
-                            `        return ${v.v1};                                 // Basisfall der Rekursion`,
-                            `    }`,
-                            `    ${v.array}[${v.v1}] = ${v.func}(${v.v1} - 1, ${v.array}) + ${v.func}(${v.v1} - 2, ${v.array}); // Start der Rekursion`,
-                            `    if (${v.v1} % 3 == 0) {`,
-                            `        int distract = ${v.v1} * 2;                    // nicht relevant`,
-                            `    }`,
-                            `    return ${v.array}[${v.v1}];                         // Rückgabe nach Rekursion`,
+                            `    if (${v.v1} <= 1) return ${v.v1};                   // Basisfall`,
+                            `    ${v.array}[${v.v1}] = ${v.func}(${v.v1} - 1, ${v.array}) + ${v.func}(${v.v1} - 2, ${v.array});`,
+                            `    return ${v.array}[${v.v1}];`,
                             `}`,
-                            `int[] ${v.array} = new int[20];`,
-                            `for (int i = 0; i < ${v.array}.length; i++) {          // Initialisiert Array mit -1, läuft 20-mal`,
+                            `int[] ${v.array} = new int[6];`,
+                            `for (int i = 0; i < 5; i++) {                          // Array mit -1 befüllen (5 Werte)`,
                             `    ${v.array}[i] = -1;`,
                             `}`,
-                            `int ${v.v2} = ${val};`,
-                            `int temp = 123;                                       // nicht relevant`,
-                            `int ${v.result} = ${v.func}(${v.v2}, ${v.array}) % 10;`,
+                            `int ${v.result} = ${v.func}(${val}, ${v.array}) % 10;`,
                             ...generateNoiseBlock(),
                             `System.out.println(${v.result});`,
                         ],
@@ -170,96 +186,55 @@ const experiment_configuration_function = (writer) => {
 
                 NestedLoops: () => {
                     let total = 0;
-                    for (let i = 1; i <= 4; i++) {
-                        for (let j = 1; j <= 4; j++) {
-                            let product = i * j;
-                            if (product % 2 === 0 && i !== j && !(i === 2 && j === 2)) {
-                                total += i + j;
-                            }
+                    for (let i = 1; i <= 2; i++) {
+                        for (let j = 1; j <= 2; j++) {
+                            if (i !== j) total += 1;
                         }
                     }
 
                     return {
                         code: [
                             `int ${v.result} = 0;`,
-                            `boolean ${v.flag} = false;`,
-                            `int noiseCounter = 0;                                // nicht relevant`,
-                            `for (int ${v.v1} = 1; ${v.v1} <= 4; ${v.v1}++) {    // äußere Schleife läuft 4-mal`,
-                            `    for (int ${v.v2} = 1; ${v.v2} <= 4; ${v.v2}++) { // innere Schleife läuft 4-mal ⇒ 16 Durchläufe`,
-                            `        int ${v.temp} = ${v.v1} * ${v.v2};`,
-                            `        if ((${v.v1} + ${v.v2}) % 7 == 0) {`,
-                            `            noiseCounter++;                            // nicht relevant`,
-                            `        }`,
-                            `        if (${v.temp} % 2 == 0 && ${v.v1} != ${v.v2}) {`,
-                            `            if (!(${v.v1} == 2 && ${v.v2} == 2)) {`,
-                            `                int sum = ${v.v1} + ${v.v2};`,
-                            `                for (int k = 0; k < 1; k++) {         // läuft 1-mal`,
-                            `                    sum += 0;                           // nicht relevant`,
-                            `                }`,
-                            `                ${v.result} += sum;`,
-                            `            } else {`,
-                            `                ${v.flag} = true;                      // Flag setzen bei (2,2)`,
-                            `            }`,
+                            `for (int ${v.v1} = 1; ${v.v1} <= 2; ${v.v1}++) {      // äußere Schleife (2 Durchgänge)`,
+                            `    for (int ${v.v2} = 1; ${v.v2} <= 2; ${v.v2}++) {  // innere Schleife (2 Durchgänge)`,
+                            `        if (${v.v1} != ${v.v2}) {`,
+                            `            ${v.result}++;                            // wird 2-mal ausgeführt`,
                             `        }`,
                             `    }`,
-                            `    if (${v.flag}) {`,
-                            `        break;                                       // Schleife abbrechen`,
-                            `    }`,
                             `}`,
-                            `for (int z = 0; z < 2; z++) {                      // läuft 2-mal`,
-                            `    int dummy = z * z;                                 // nicht relevant`,
-                            `}`,
-                            `System.out.println(${v.result} % 10);`,
+                            ...generateNoiseBlock(),
+                            `System.out.println(${v.result});`,
                         ],
-                        result: total % 10,
+                        result: 2,
                     };
                 },
 
                 BoolLogik: () => {
-                    const inputs = [true, false, true, true, false];
+                    const inputs = [true, false, true];
                     let result = 0;
-
                     for (let i = 0; i < inputs.length; i++) {
                         const a = inputs[i];
                         const b = inputs[(i + 1) % inputs.length];
-
-                        if ((a && !b) || (!a && b)) {
-                            result += i;
-                        }
-
-                        if (a && b) {
-                            result += 2;
-                        }
+                        if (a && !b) result++;
                     }
 
                     return {
                         code: [
-                            `boolean[] ${v.array} = {true, false, true, true, false};`,
+                            `boolean[] ${v.array} = {true, false, true};          // Array mit 3 Werten`,
                             `int ${v.result} = 0;`,
-                            `int noiseCounter = 0;                                // nicht relevant`,
-                            `for (int ${v.v1} = 0; ${v.v1} < ${v.array}.length; ${v.v1}++) { // Schleife läuft 5-mal`,
+                            `for (int ${v.v1} = 0; ${v.v1} < ${v.array}.length; ${v.v1}++) { // Schleife läuft 3-mal`,
                             `    boolean a = ${v.array}[${v.v1}];`,
                             `    boolean b = ${v.array}[(${v.v1} + 1) % ${v.array}.length];`,
-                            `    if (a == b) {`,
-                            `        noiseCounter++;                              // nicht relevant`,
+                            `    if (a && !b) {`,
+                            `        ${v.result}++;`,
                             `    }`,
-                            `    if ((a && !b) || (!a && b)) {`,
-                            `        ${v.result} += ${v.v1};`,
-                            `    }`,
-                            `    if (a && b) {`,
-                            `        ${v.result} += 2;`,
-                            `    }`,
-                            `    boolean distraction = (${v.v1} % 2 == 0);        // nicht relevant`,
                             `}`,
-                            `boolean dummyFlag = noiseCounter > 3;`,
-                            `if (dummyFlag) {`,
-                            `    ${v.result} += 0;                                // nicht relevant`,
-                            `}`,
-                            `System.out.println(${v.result} % 10);`,
+                            ...generateNoiseBlock(),
+                            `System.out.println(${v.result});`,
                         ],
-                        result: result % 10,
+                        result: result,
                     };
-                }
+                },
             };
 
             if (!(variantName in codeVariants)) {
