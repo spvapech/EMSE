@@ -13,25 +13,36 @@ const experiment_configuration_function = (writer) => {
     function format_code_lines(codeLines, addComment) {
         const COMMENT_COLUMN = 50;
 
+        const codeWidths = codeLines.map(line => {
+            const codeOnly = line.split("//")[0];
+            return codeOnly.trimEnd().length;
+        });
+        const maxCodeWidth = Math.max(...codeWidths, COMMENT_COLUMN);
+
         return codeLines.map((line) => {
-            if (!addComment) return line.split("//")[0].trimEnd();
-            if (!line.includes("//")) return line;
+            if (!addComment) {
+                return line.split("//")[0].trimEnd();
+            }
 
-            const [codePart, comment] = line.split("//");
-            const code = codePart.trimEnd();
-            const indent = codePart.match(/^\s*/)[0];
+            const commentIndex = line.indexOf("//");
+            if (commentIndex === -1) {
+                return line;
+            }
 
-            const paddedCode = indent + code;
-            const paddingLength = Math.max(COMMENT_COLUMN - paddedCode.length, 2);
+            const codePart = line.slice(0, commentIndex).trimEnd();
+            const comment = line.slice(commentIndex + 2).trim();
+            const indent = line.match(/^\s*/)?.[0] ?? "";
+            const fullCode = indent + codePart;
+
+            const paddingLength = Math.max(maxCodeWidth - fullCode.length, 2);
             const padding = " ".repeat(paddingLength);
 
-            const trimmedComment = comment.trim();
-            const isDistraction = /nicht relevant/i.test(trimmedComment);
+            const isDistraction = /nicht relevant/i.test(comment);
             const style = isDistraction
                 ? "color: red; font-weight: bold; font-style: italic"
                 : "color: blue; font-style: italic";
 
-            return `${paddedCode}${padding}<span style="${style}">// ${trimmedComment}</span>`;
+            return `${fullCode}${padding}<span style="${style}">// ${comment}</span>`;
         });
     }
 
@@ -104,8 +115,11 @@ const experiment_configuration_function = (writer) => {
                 `// nicht relevant`,
                 `int ${v.dummy} = 0;                                      // nicht relevant`,
                 `for (int ${v.temp} = 0; ${v.temp} < 3; ${v.temp}++) {   // nicht relevant`,
-                `    if (${v.temp} % 2 == 0) ${v.dummy} += ${v.temp};    // nicht relevant`,
-                `    else ${v.dummy} -= ${v.temp};                       // nicht relevant`,
+                `    if (${v.temp} % 2 == 0) {`,
+                `        ${v.dummy} += ${v.temp};                        // nicht relevant`,
+                `    } else {`,
+                `        ${v.dummy} -= ${v.temp};                        // nicht relevant`,
+                `    }`,
                 `}`,
             ];
 
@@ -116,22 +130,34 @@ const experiment_configuration_function = (writer) => {
                 Rekursion: () => {
                     const val = randNum();
                     const fib = [0, 1];
-                    for (let i = 2; i <= val; i++) fib.push(fib[i - 1] + fib[i - 2]);
+                    for (let i = 2; i <= val; i++) {
+                        fib.push(fib[i - 1] + fib[i - 2]);
+                    }
                     const res = fib[val] % 10;
 
                     return {
                         code: [
                             `int ${v.func}(int ${v.v1}, int[] ${v.array}) {`,
                             `    int noise = 0;                                      // nicht relevant`,
-                            `    for (int i = 0; i < 2; i++) noise += i;            // nicht relevant`,
-                            `    if (${v.v1} < ${v.array}.length && ${v.array}[${v.v1}] != -1) return ${v.array}[${v.v1}];`,
-                            `    if (${v.v1} <= 1) return ${v.v1};`,
-                            `    ${v.array}[${v.v1}] = ${v.func}(${v.v1} - 1, ${v.array}) + ${v.func}(${v.v1} - 2, ${v.array});`,
-                            `    if (${v.v1} % 3 == 0) int distract = ${v.v1} * 2;   // nicht relevant`,
-                            `    return ${v.array}[${v.v1}];`,
+                            `    for (int i = 0; i < 2; i++) {                      // Schleife läuft 2-mal (i=0,1)`,
+                            `        noise += i;                                    // nicht relevant`,
+                            `    }`,
+                            `    if (${v.v1} < ${v.array}.length && ${v.array}[${v.v1}] != -1) {`,
+                            `        return ${v.array}[${v.v1}];                    // Prüft, ob Ergebnis schon berechnet wurde`,
+                            `    }`,
+                            `    if (${v.v1} <= 1) {`,
+                            `        return ${v.v1};                                 // Basisfall der Rekursion`,
+                            `    }`,
+                            `    ${v.array}[${v.v1}] = ${v.func}(${v.v1} - 1, ${v.array}) + ${v.func}(${v.v1} - 2, ${v.array}); // Start der Rekursion`,
+                            `    if (${v.v1} % 3 == 0) {`,
+                            `        int distract = ${v.v1} * 2;                    // nicht relevant`,
+                            `    }`,
+                            `    return ${v.array}[${v.v1}];                         // Rückgabe nach Rekursion`,
                             `}`,
                             `int[] ${v.array} = new int[20];`,
-                            `for (int i = 0; i < ${v.array}.length; i++) ${v.array}[i] = -1;`,
+                            `for (int i = 0; i < ${v.array}.length; i++) {          // Initialisiert Array mit -1, läuft 20-mal`,
+                            `    ${v.array}[i] = -1;`,
+                            `}`,
                             `int ${v.v2} = ${val};`,
                             `int temp = 123;                                       // nicht relevant`,
                             `int ${v.result} = ${v.func}(${v.v2}, ${v.array}) % 10;`,
@@ -158,23 +184,31 @@ const experiment_configuration_function = (writer) => {
                             `int ${v.result} = 0;`,
                             `boolean ${v.flag} = false;`,
                             `int noiseCounter = 0;                                // nicht relevant`,
-                            `for (int ${v.v1} = 1; ${v.v1} <= 4; ${v.v1}++) {`,
-                            `    for (int ${v.v2} = 1; ${v.v2} <= 4; ${v.v2}++) {`,
+                            `for (int ${v.v1} = 1; ${v.v1} <= 4; ${v.v1}++) {    // äußere Schleife läuft 4-mal`,
+                            `    for (int ${v.v2} = 1; ${v.v2} <= 4; ${v.v2}++) { // innere Schleife läuft 4-mal ⇒ 16 Durchläufe`,
                             `        int ${v.temp} = ${v.v1} * ${v.v2};`,
-                            `        if ((${v.v1} + ${v.v2}) % 7 == 0) noiseCounter++; // nicht relevant`,
+                            `        if ((${v.v1} + ${v.v2}) % 7 == 0) {`,
+                            `            noiseCounter++;                            // nicht relevant`,
+                            `        }`,
                             `        if (${v.temp} % 2 == 0 && ${v.v1} != ${v.v2}) {`,
                             `            if (!(${v.v1} == 2 && ${v.v2} == 2)) {`,
                             `                int sum = ${v.v1} + ${v.v2};`,
-                            `                for (int k = 0; k < 1; k++) sum += 0; // nicht relevant`,
+                            `                for (int k = 0; k < 1; k++) {         // läuft 1-mal`,
+                            `                    sum += 0;                           // nicht relevant`,
+                            `                }`,
                             `                ${v.result} += sum;`,
                             `            } else {`,
-                            `                ${v.flag} = true;`,
+                            `                ${v.flag} = true;                      // Flag setzen bei (2,2)`,
                             `            }`,
                             `        }`,
                             `    }`,
-                            `    if (${v.flag}) break;`,
+                            `    if (${v.flag}) {`,
+                            `        break;                                       // Schleife abbrechen`,
+                            `    }`,
                             `}`,
-                            `for (int z = 0; z < 2; z++) int dummy = z * z;       // nicht relevant`,
+                            `for (int z = 0; z < 2; z++) {                      // läuft 2-mal`,
+                            `    int dummy = z * z;                                 // nicht relevant`,
+                            `}`,
                             `System.out.println(${v.result} % 10);`,
                         ],
                         result: total % 10,
@@ -203,10 +237,12 @@ const experiment_configuration_function = (writer) => {
                             `boolean[] ${v.array} = {true, false, true, true, false};`,
                             `int ${v.result} = 0;`,
                             `int noiseCounter = 0;                                // nicht relevant`,
-                            `for (int ${v.v1} = 0; ${v.v1} < ${v.array}.length; ${v.v1}++) {`,
+                            `for (int ${v.v1} = 0; ${v.v1} < ${v.array}.length; ${v.v1}++) { // Schleife läuft 5-mal`,
                             `    boolean a = ${v.array}[${v.v1}];`,
                             `    boolean b = ${v.array}[(${v.v1} + 1) % ${v.array}.length];`,
-                            `    if (a == b) noiseCounter++;                      // nicht relevant`,
+                            `    if (a == b) {`,
+                            `        noiseCounter++;                              // nicht relevant`,
+                            `    }`,
                             `    if ((a && !b) || (!a && b)) {`,
                             `        ${v.result} += ${v.v1};`,
                             `    }`,
@@ -215,13 +251,15 @@ const experiment_configuration_function = (writer) => {
                             `    }`,
                             `    boolean distraction = (${v.v1} % 2 == 0);        // nicht relevant`,
                             `}`,
-                            `boolean dummyFlag = noiseCounter > 3;               // nicht relevant`,
-                            `if (dummyFlag) ${v.result} += 0;                    // nicht relevant`,
+                            `boolean dummyFlag = noiseCounter > 3;`,
+                            `if (dummyFlag) {`,
+                            `    ${v.result} += 0;                                // nicht relevant`,
+                            `}`,
                             `System.out.println(${v.result} % 10);`,
                         ],
                         result: result % 10,
                     };
-                },
+                }
             };
 
             if (!(variantName in codeVariants)) {
