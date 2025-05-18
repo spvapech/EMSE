@@ -155,7 +155,7 @@ const experiment_configuration_function = (writer) => {
 
             const codeVariants = {
                 Rekursion: () => {
-                    const val = 4;
+                    const val = 3 + random_int(3); // 3–5
                     const fib = [0, 1];
                     for (let i = 2; i <= val; i++) {
                         fib.push(fib[i - 1] + fib[i - 2]);
@@ -172,8 +172,8 @@ const experiment_configuration_function = (writer) => {
                             `    ${v.array}[${v.v1}] = ${v.func}(${v.v1} - 1, ${v.array}) + ${v.func}(${v.v1} - 2, ${v.array});`,
                             `    return ${v.array}[${v.v1}];`,
                             `}`,
-                            `int[] ${v.array} = new int[6];`,
-                            `for (int i = 0; i < 5; i++) {                          // Array mit -1 befüllen (5 Werte)`,
+                            `int[] ${v.array} = new int[${val + 2}];`,
+                            `for (int i = 0; i < ${val + 1}; i++) {                 // Array vorbereiten`,
                             `    ${v.array}[i] = -1;`,
                             `}`,
                             `int ${v.result} = ${v.func}(${val}, ${v.array}) % 10;`,
@@ -185,9 +185,11 @@ const experiment_configuration_function = (writer) => {
                 },
 
                 NestedLoops: () => {
+                    const outer = 2 + random_int(2); // 2–3
+                    const inner = 2 + random_int(2); // 2–3
                     let total = 0;
-                    for (let i = 1; i <= 2; i++) {
-                        for (let j = 1; j <= 2; j++) {
+                    for (let i = 1; i <= outer; i++) {
+                        for (let j = 1; j <= inner; j++) {
                             if (i !== j) total += 1;
                         }
                     }
@@ -195,34 +197,36 @@ const experiment_configuration_function = (writer) => {
                     return {
                         code: [
                             `int ${v.result} = 0;`,
-                            `for (int ${v.v1} = 1; ${v.v1} <= 2; ${v.v1}++) {      // äußere Schleife (2 Durchgänge)`,
-                            `    for (int ${v.v2} = 1; ${v.v2} <= 2; ${v.v2}++) {  // innere Schleife (2 Durchgänge)`,
+                            `for (int ${v.v1} = 1; ${v.v1} <= ${outer}; ${v.v1}++) {      // äußere Schleife`,
+                            `    for (int ${v.v2} = 1; ${v.v2} <= ${inner}; ${v.v2}++) {  // innere Schleife`,
                             `        if (${v.v1} != ${v.v2}) {`,
-                            `            ${v.result}++;                            // wird 2-mal ausgeführt`,
+                            `            ${v.result}++;                                   // Bedingung erfüllt`,
                             `        }`,
                             `    }`,
                             `}`,
                             ...generateNoiseBlock(),
                             `System.out.println(${v.result});`,
                         ],
-                        result: 2,
+                        result: total,
                     };
                 },
 
                 BoolLogik: () => {
-                    const inputs = [true, false, true];
+                    const boolArray = Array.from({ length: 3 }, () => random_int(2) === 1);
                     let result = 0;
-                    for (let i = 0; i < inputs.length; i++) {
-                        const a = inputs[i];
-                        const b = inputs[(i + 1) % inputs.length];
+                    for (let i = 0; i < boolArray.length; i++) {
+                        const a = boolArray[i];
+                        const b = boolArray[(i + 1) % boolArray.length];
                         if (a && !b) result++;
                     }
 
+                    const boolStr = boolArray.map(b => b ? "true" : "false").join(", ");
+
                     return {
                         code: [
-                            `boolean[] ${v.array} = {true, false, true};          // Array mit 3 Werten`,
+                            `boolean[] ${v.array} = {${boolStr}};                // Array mit Zufallswerten`,
                             `int ${v.result} = 0;`,
-                            `for (int ${v.v1} = 0; ${v.v1} < ${v.array}.length; ${v.v1}++) { // Schleife läuft 3-mal`,
+                            `for (int ${v.v1} = 0; ${v.v1} < ${v.array}.length; ${v.v1}++) {`,
                             `    boolean a = ${v.array}[${v.v1}];`,
                             `    boolean b = ${v.array}[(${v.v1} + 1) % ${v.array}.length];`,
                             `    if (a && !b) {`,
