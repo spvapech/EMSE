@@ -164,17 +164,19 @@ const experiment_configuration_function = (writer) => {
 
                     return {
                         code: [
-                            `int ${v.func}(int ${v.v1}, int[] ${v.array}) {`,
+                            ...generateNoiseBlock(),
+                            `int ${v.func}(int ${v.v1}, int[] ${v.array}) {       // Überprüfen, ob der Wert bereits berechnet und gespeichert wurde`,
                             `    if (${v.v1} < ${v.array}.length && ${v.array}[${v.v1}] != -1) {`,
-                            `        return ${v.array}[${v.v1}];                    // bereits berechnet`,
+                            `        return ${v.array}[${v.v1}];                    // // Rückgabe des gespeicherten Werts`,
                             `    }`,
-                            `    if (${v.v1} <= 1) return ${v.v1};                   // Basisfall`,
-                            `    ${v.array}[${v.v1}] = ${v.func}(${v.v1} - 1, ${v.array}) + ${v.func}(${v.v1} - 2, ${v.array});`,
+                            `    if (${v.v1} <= 1)  // Basisfälle der Fibonacci-Folge`,
+                                    `return ${v.v1};`,
+                            `    ${v.array}[${v.v1}] = ${v.func}(${v.v1} - 1, ${v.array}) + ${v.func}(${v.v1} - 2, ${v.array}); // Rekursive Berechnung mit Speicherung des Ergebnisses`,
                             `    return ${v.array}[${v.v1}];`,
                             `}`,
-                            `int[] ${v.array} = new int[${val + 2}];`,
-                            `for (int i = 0; i < ${val + 1}; i++) {                 // Array vorbereiten`,
-                            `    ${v.array}[i] = -1;`,
+                            `int[] ${v.array} = new int[${val + 2}]; // Index der gewünschten Fibonacci-Zahl`,
+                            `for (int i = 0; i < ${val + 1}; i++) {                 // Array zur Speicherung der berechneten Werte`,
+                            `    ${v.array}[i] = -1;                                // -1 markiert: noch nicht berechnet`,
                             `}`,
                             `int ${v.result} = ${v.func}(${val}, ${v.array}) % 10;`,
                             ...generateNoiseBlock(),
@@ -185,8 +187,8 @@ const experiment_configuration_function = (writer) => {
                 },
 
                 NestedLoops: () => {
-                    const outer = 2 + random_int(2); // 2–3
-                    const inner = 2 + random_int(2); // 2–3
+                    const outer = 1 + random_int(3);
+                    const inner = 1 + random_int(3);
                     let total = 0;
                     for (let i = 1; i <= outer; i++) {
                         for (let j = 1; j <= inner; j++) {
@@ -197,10 +199,12 @@ const experiment_configuration_function = (writer) => {
                     return {
                         code: [
                             `int ${v.result} = 0;`,
-                            `for (int ${v.v1} = 1; ${v.v1} <= ${outer}; ${v.v1}++) {      // äußere Schleife`,
-                            `    for (int ${v.v2} = 1; ${v.v2} <= ${inner}; ${v.v2}++) {  // innere Schleife`,
+                            ...generateNoiseBlock(),
+                            `for (int ${v.v1} = 1; ${v.v1} <= ${outer}; ${v.v1}++) {      // äußere Schleife, läuft ${outer} Mal`,
+                            `    for (int ${v.v2} = 1; ${v.v2} <= ${inner}; ${v.v2}++) {  // innere Schleife, läuft ${inner} Mal`,
+                                                                                        `//Insgesamt ${outer + (outer * inner)} Mal`,
                             `        if (${v.v1} != ${v.v2}) {`,
-                            `            ${v.result}++;                                   // Bedingung erfüllt`,
+                            `            ${v.result}++;                                   `,
                             `        }`,
                             `    }`,
                             `}`,
@@ -226,7 +230,7 @@ const experiment_configuration_function = (writer) => {
                         code: [
                             `boolean[] ${v.array} = {${boolStr}};                // Array mit Zufallswerten`,
                             `int ${v.result} = 0;`,
-                            `for (int ${v.v1} = 0; ${v.v1} < ${v.array}.length; ${v.v1}++) {`,
+                            `for (int ${v.v1} = 0; ${v.v1} < ${v.array}.length; ${v.v1}++) { //Zählt true→false-Übergänge zyklisch.`,
                             `    boolean a = ${v.array}[${v.v1}];`,
                             `    boolean b = ${v.array}[(${v.v1} + 1) % ${v.array}.length];`,
                             `    if (a && !b) {`,
